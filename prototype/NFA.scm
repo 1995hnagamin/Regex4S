@@ -1,11 +1,18 @@
-(define (make-fun arrow)
-  (letrec ((A (lambda (r a ls)
-                (cond
-                  ((null? ls) '())
-                  ((equal? (list r a) (caar ls)) (cadar ls))
-                  (else (A r a (cdr ls)))))))
-    (lambda (r a)
-      (A r a arrow))))
+(define (rel-apply a rel)
+  (cond
+    ((null? rel) '())
+    ((equal? a (car (car rel))) (cadr (car rel)))
+    (else (rel-apply a (cdr rel)))))
+
+(define (make-fun transit)
+  (lambda (state char)
+    (rel-apply (list state char) transit)))
+
+(define (make-e-fun transit e-transit)
+  (lambda (state . char)
+    (if (null? char)
+      (rel-apply state e-transit)
+      (rel-apply (list state (car char)) transit))))
 
 (define l '(((0 #\0) (1)) ((0 #\1) (0))
             ((1 #\0) (2)) ((1 #\1) (0))
@@ -27,8 +34,11 @@
 (define (conf-state conf)   (car (cdr conf)))
 (define (conf-string conf) (car (cdr (cdr conf))))
 
-(define (acceptable-conf? conf) (accept-state? (conf-machine conf) (conf-state conf)))
-(define (empty-string-conf? conf) (null? (conf-string conf)))
+(define (acceptable-conf? conf)
+  (accept-state? (conf-machine conf) (conf-state conf)))
+
+(define (empty-string-conf? conf)
+  (null? (conf-string conf)))
 
 (define (make-initial-configration M str)
   (make-configration M (initial M) str))
