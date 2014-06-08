@@ -4,20 +4,11 @@
     ((equal? a (car (car rel))) (cadr (car rel)))
     (else (rel-apply a (cdr rel)))))
 
-(define (make-fun transit)
-  (lambda (state char)
-    (rel-apply (list state char) transit)))
-
 (define (make-e-fun transit e-transit)
   (lambda (state . char)
     (if (null? char)
       (rel-apply state e-transit)
       (rel-apply (list state (car char)) transit))))
-
-(define l '(((0 #\0) (1)) ((0 #\1) (0))
-            ((1 #\0) (2)) ((1 #\1) (0))
-            ((2 #\0) (2)) ((2 #\1) (3))
-            ((3 #\0) (3)) ((3 #\1) (3))))
 
 (define delta '(((1 #\0) (2)) ((1 #\1) (1))
                 ((2 #\0) (1)) ((2 #\1) (2))
@@ -30,7 +21,7 @@
 (define (state M)      (car M))
 (define (alphabet M)   (car (cdr M)))
 (define (transition M) (car (cdr (cdr M))))
-(define (initial M)    (car (cdr (cdr (cdr M)))))
+(define (start M)      (car (cdr (cdr (cdr M)))))
 (define (stacpt M)     (car (cdr (cdr (cdr (cdr M))))))
 
 (define (transit M r . a)
@@ -52,7 +43,7 @@
   (null? (conf-string conf)))
 
 (define (make-initial-configration M str)
-  (make-configration M (initial M) str))
+  (make-configration M (start M) str))
 
 (define (next-configs conf)
   (let ((M   (conf-machine conf))
@@ -82,9 +73,9 @@
                str)))
     (conf-accepts? (make-initial-configration M lst))))
 
-(define M (make-nfa '(0 1 2 3) '(#\0 #\1) (make-fun l) 0 '(3)))
 (define N (make-nfa '(0 1 2 3)
                     '(#\0 #\1)
                     (make-e-fun delta e-delta)
                     0
                     '(3)))
+
