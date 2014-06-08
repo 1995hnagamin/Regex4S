@@ -1,0 +1,81 @@
+(define (rel-apply a rel)
+  (cond
+    ((null? rel) '())
+    ((equal? a (car (car rel))) (cadr (car rel)))
+    (else (rel-apply a (cdr rel)))))
+
+(define (make-e-fun transit e-transit)
+  (lambda (state . char)
+    (if (null? char)
+      (rel-apply state e-transit)
+      (rel-apply (list state (car char)) transit))))
+
+(define delta '(((1 #\0) (2)) ((1 #\1) (1))
+                ((2 #\0) (1)) ((2 #\1) (2))
+                ((3 #\0) (3)) ((3 #\1) (4))
+                ((4 #\0) (4)) ((4 #\1) (3))))
+
+(define e-delta '( (0 (1 3)) ))
+
+(define (make-nfa Q S T q0 F) (list Q S T q0 F))
+(define (state M)      (car M))
+(define (alphabet M)   (car (cdr M)))
+(define (transition M) (car (cdr (cdr M))))
+(define (start M)      (car (cdr (cdr (cdr M)))))
+(define (stacpt M)     (car (cdr (cdr (cdr (cdr M))))))
+
+(define (transit M r . a)
+  (if (null? a)
+    ((transition M) r)
+    ((transition M) r (car a))))
+
+(define (accept-state? M a) (member a (stacpt M)))
+
+(define (make-configration M state str) (list M state str))
+(define (conf-machine conf) (car conf))
+(define (conf-state conf)   (car (cdr conf)))
+(define (conf-string conf) (car (cdr (cdr conf))))
+
+(define (acceptable-conf? conf)
+  (accept-state? (conf-machine conf) (conf-state conf)))
+
+(define (empty-string-conf? conf)
+  (null? (conf-string conf)))
+
+(define (make-initial-configration M str)
+  (make-configration M (start M) str))
+
+(define (next-configs conf)
+  (let ((M   (conf-machine conf))
+        (r   (conf-state conf))
+        (str (conf-string conf)))
+    (append
+      (map (lambda (state)
+             (make-configration M state str))
+           (transit M r))
+      (map (lambda (state)
+             (make-configration M state (cdr str)))
+           (transit M r (car str))))))
+
+(define (conf-accepts? conf)
+  (if (empty-string-conf? conf)
+    (acceptable-conf? conf)
+    (letrec ((acc? (lambda (configs)
+                     (cond
+                       ((null? configs) #f)
+                       ((conf-accepts? (car configs)) #t)
+                       (else (acc? (cdr configs)))))))
+      (acc? (next-configs conf)))))
+
+(define (accepts? M str)
+  (let ((lst (if (string? str)
+               (string->list str)
+               str)))
+    (conf-accepts? (make-initial-configration M lst))))
+
+(define N (make-nfa '(0 1 2 3)
+                    '(#\0 #\1)
+                    (make-e-fun delta e-delta)
+                    0
+                    '(3)))
+
