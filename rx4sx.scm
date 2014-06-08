@@ -66,3 +66,33 @@
                str)))
     (conf-accepts? (make-initial-configration M lst))))
 
+(define (new-state state)
+  (letrec ((A (lambda (n)
+                (if (member n state)
+                  (A (+ 1 n))
+                  n))))
+    (A 0)))
+
+(define (star M)
+  (let* ((q0 (new-state (state M)))
+         (transit (transition M))
+         (delta
+           (lambda (q . a)
+             (cond
+               ((equal? q q0) (if (null? a) (list (start M)) '()))
+               ((accept-state? M q) (if (null? a)
+                                      (cons (start M) (transit q))
+                                      (transit q (car a))))
+               (else (if (null? a) (transit q) (transit q (car a))))))))
+    (make-nfa (cons q0 (state M)) (alphabet M) delta q0 (cons q0 (stacpt M)))))
+
+(define l '(((0 #\0) (1))
+            ((1 #\0) (2))
+            ((2 #\1) (3))
+            ))
+(define M (make-nfa '(0 1 2 3)
+                    '(#\0 #\1)
+                    (make-e-fun l '())
+                    0
+                    '(3)))
+(define N (star M))
