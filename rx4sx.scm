@@ -48,6 +48,9 @@
 (define empty-configs? null?)
 
 (define (next-configs M conf)
+  (display (conf-state conf))
+  (display " ")
+  (print (conf-string conf))
   (let ((r   (conf-state conf))
         (str (conf-string conf)))
     (append
@@ -101,8 +104,19 @@
             ((1 #\0) (2))
             ((2 #\1) (3))
             ))
-(define M (make-nfa (make-membership '(0 1 2 3))
-                    (make-e-fun l '())
+
+(define (ll state . char)
+  (cond
+    ((null? char) '())
+    ((not (number? (car char))) '())
+    ((and (even? (car char)) (equal? 0 state)) '(1))
+    ((and (odd?  (car char)) (equal? 1 state)) '(2))
+    (else '())))
+
+(define M (make-nfa (make-membership '(0 1 2))
+                    ll
                     0
-                    (make-membership '(3))))
+                    (make-membership '(2))))
 (define N (star M))
+
+(define (n . str) (accepts? N str))
