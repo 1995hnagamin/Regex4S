@@ -23,19 +23,18 @@
 
 (define (accept-state? M a) (member a (accept M)))
 
-(define (make-configration M state str) (list M state str))
-(define (conf-machine conf) (car conf))
-(define (conf-state conf)   (car (cdr conf)))
-(define (conf-string conf) (car (cdr (cdr conf))))
+(define (make-configration state str) (list state str))
+(define (conf-state conf)  (car conf))
+(define (conf-string conf) (car (cdr conf)))
 
-(define (acceptable-conf? conf)
-  (accept-state? (conf-machine conf) (conf-state conf)))
+(define (acceptable-conf? M conf)
+  (accept-state? M (conf-state conf)))
 
 (define (empty-string-conf? conf)
   (null? (conf-string conf)))
 
 (define (make-initial-configration M str)
-  (make-configration M (start M) str))
+  (make-configration (start M) str))
 
 (define (make-configs list-of-configs) list-of-configs)
 (define (cons-configs config configs) (cons config configs))
@@ -43,33 +42,32 @@
 (define (cdr-configs configs) (cdr configs))
 (define empty-configs? null?)
 
-(define (next-configs conf)
-  (let ((M   (conf-machine conf))
-        (r   (conf-state conf))
+(define (next-configs M conf)
+  (let ((r   (conf-state conf))
         (str (conf-string conf)))
     (append
       (map (lambda (state)
-             (make-configration M state str))
+             (make-configration state str))
            (transit M r))
       (map (lambda (state)
-             (make-configration M state (cdr str)))
+             (make-configration state (cdr str)))
            (transit M r (car str))))))
 
-(define (conf-accepts? conf)
+(define (conf-accepts? M conf)
   (if (empty-string-conf? conf)
-    (acceptable-conf? conf)
+    (acceptable-conf? M conf)
     (letrec ((acc? (lambda (configs)
                      (cond
                        ((empty-configs? configs) #f)
-                       ((conf-accepts? (car-configs configs)) #t)
+                       ((conf-accepts? M (car-configs configs)) #t)
                        (else (acc? (cdr-configs configs)))))))
-      (acc? (next-configs conf)))))
+      (acc? (next-configs M conf)))))
 
 (define (accepts? M str)
   (let ((lst (if (string? str)
                (string->list str)
                str)))
-    (conf-accepts? (make-initial-configration M lst))))
+    (conf-accepts? M (make-initial-configration M lst))))
 
 (define (new-state state)
   (letrec ((A (lambda (n)
