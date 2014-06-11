@@ -10,19 +10,18 @@
       (rel-apply state e-transit)
       (rel-apply (list state (car char)) transit))))
 
-(define (make-nfa Q S T q0 F) (list Q S T q0 F))
+(define (make-nfa Q T q0 F) (list Q T q0 F))
 (define (state M)      (car M))
-(define (alphabet M)   (car (cdr M)))
-(define (transition M) (car (cdr (cdr M))))
-(define (start M)      (car (cdr (cdr (cdr M)))))
-(define (stacpt M)     (car (cdr (cdr (cdr (cdr M))))))
+(define (transition M) (car (cdr M)))
+(define (start M)      (car (cdr (cdr M))))
+(define (accept M)     (car (cdr (cdr (cdr M)))))
 
 (define (transit M r . a)
   (if (null? a)
     ((transition M) r)
     ((transition M) r (car a))))
 
-(define (accept-state? M a) (member a (stacpt M)))
+(define (accept-state? M a) (member a (accept M)))
 
 (define (make-configration M state str) (list M state str))
 (define (conf-machine conf) (car conf))
@@ -37,6 +36,12 @@
 
 (define (make-initial-configration M str)
   (make-configration M (start M) str))
+
+(define (make-configs list-of-configs) list-of-configs)
+(define (cons-configs config configs) (cons config configs))
+(define (car-configs configs) (car configs))
+(define (cdr-configs configs) (cdr configs))
+(define empty-configs? null?)
 
 (define (next-configs conf)
   (let ((M   (conf-machine conf))
@@ -55,9 +60,9 @@
     (acceptable-conf? conf)
     (letrec ((acc? (lambda (configs)
                      (cond
-                       ((null? configs) #f)
-                       ((conf-accepts? (car configs)) #t)
-                       (else (acc? (cdr configs)))))))
+                       ((empty-configs? configs) #f)
+                       ((conf-accepts? (car-configs configs)) #t)
+                       (else (acc? (cdr-configs configs)))))))
       (acc? (next-configs conf)))))
 
 (define (accepts? M str)
@@ -84,14 +89,13 @@
                                       (cons (start M) (transit q))
                                       (transit q (car a))))
                (else (if (null? a) (transit q) (transit q (car a))))))))
-    (make-nfa (cons q0 (state M)) (alphabet M) delta q0 (cons q0 (stacpt M)))))
+    (make-nfa (cons q0 (state M)) delta q0 (cons q0 (accept M)))))
 
 (define l '(((0 #\0) (1))
             ((1 #\0) (2))
             ((2 #\1) (3))
             ))
 (define M (make-nfa '(0 1 2 3)
-                    '(#\0 #\1)
                     (make-e-fun l '())
                     0
                     '(3)))
