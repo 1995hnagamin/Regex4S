@@ -37,6 +37,12 @@
 (define (make-initial-configration M str)
   (make-configration M (start M) str))
 
+(define (make-configs list-of-configs) list-of-configs)
+(define (cons-configs config configs) (cons config configs))
+(define (car-configs configs) (car configs))
+(define (cdr-configs configs) (cdr configs))
+(define empty-configs? null?)
+
 (define (next-configs conf)
   (let ((M   (conf-machine conf))
         (r   (conf-state conf))
@@ -54,9 +60,9 @@
     (acceptable-conf? conf)
     (letrec ((acc? (lambda (configs)
                      (cond
-                       ((null? configs) #f)
-                       ((conf-accepts? (car configs)) #t)
-                       (else (acc? (cdr configs)))))))
+                       ((empty-configs? configs) #f)
+                       ((conf-accepts? (car-configs configs)) #t)
+                       (else (acc? (cdr-configs configs)))))))
       (acc? (next-configs conf)))))
 
 (define (accepts? M str)
