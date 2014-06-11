@@ -4,6 +4,11 @@
     ((equal? a (car (car rel))) (cadr (car rel)))
     (else (rel-apply a (cdr rel)))))
 
+(define (make-membership set) (lambda (e) (member e set)))
+(define (cons-membership a membership)
+  (lambda (e) (or (equal? e a)
+                  (membership e))))
+
 (define (make-e-fun transit e-transit)
   (lambda (state . char)
     (if (null? char)
@@ -21,7 +26,7 @@
     ((transition M) r)
     ((transition M) r (car a))))
 
-(define (accept-state? M a) (member a (accept M)))
+(define (accept-state? M a) ((accept M) a))
 
 (define (make-configration state str) (list state str))
 (define (conf-state conf)  (car conf))
@@ -71,7 +76,7 @@
 
 (define (new-state state)
   (letrec ((A (lambda (n)
-                (if (member n state)
+                (if (state n)
                   (A (+ 1 n))
                   n))))
     (A 0)))
@@ -87,14 +92,17 @@
                                       (cons (start M) (transit q))
                                       (transit q (car a))))
                (else (if (null? a) (transit q) (transit q (car a))))))))
-    (make-nfa (cons q0 (state M)) delta q0 (cons q0 (accept M)))))
+    (make-nfa (cons-membership q0 (state M))
+              delta
+              q0
+              (cons-membership q0 (accept M)))))
 
 (define l '(((0 #\0) (1))
             ((1 #\0) (2))
             ((2 #\1) (3))
             ))
-(define M (make-nfa '(0 1 2 3)
+(define M (make-nfa (make-membership '(0 1 2 3))
                     (make-e-fun l '())
                     0
-                    '(3)))
+                    (make-membership '(3))))
 (define N (star M))
