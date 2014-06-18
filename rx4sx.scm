@@ -48,9 +48,6 @@
 (define empty-configs? null?)
 
 (define (next-configs M conf)
-  (display (conf-state conf))
-  (display " ")
-  (print (conf-string conf))
   (let ((r   (conf-state conf))
         (str (conf-string conf)))
     (append
