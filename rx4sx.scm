@@ -4,6 +4,11 @@
     ((equal? a (car (car rel))) (cadr (car rel)))
     (else (rel-apply a (cdr rel)))))
 
+(define (make-membership set) (lambda (e) (member e set)))
+(define (cons-membership a membership)
+  (lambda (e) (or (equal? e a)
+                  (membership e))))
+
 (define (make-e-fun transit e-transit)
   (lambda (state . char)
     (if (null? char)
@@ -21,21 +26,20 @@
     ((transition M) r)
     ((transition M) r (car a))))
 
-(define (accept-state? M a) (member a (accept M)))
+(define (accept-state? M a) ((accept M) a))
 
-(define (make-configration M state str) (list M state str))
-(define (conf-machine conf) (car conf))
-(define (conf-state conf)   (car (cdr conf)))
-(define (conf-string conf) (car (cdr (cdr conf))))
+(define (make-configration state str) (list state str))
+(define (conf-state conf)  (car conf))
+(define (conf-string conf) (car (cdr conf)))
 
-(define (acceptable-conf? conf)
-  (accept-state? (conf-machine conf) (conf-state conf)))
+(define (acceptable-conf? M conf)
+  (accept-state? M (conf-state conf)))
 
 (define (empty-string-conf? conf)
   (null? (conf-string conf)))
 
 (define (make-initial-configration M str)
-  (make-configration M (start M) str))
+  (make-configration (start M) str))
 
 (define (make-configs list-of-configs) list-of-configs)
 (define (cons-configs config configs) (cons config configs))
@@ -43,37 +47,36 @@
 (define (cdr-configs configs) (cdr configs))
 (define empty-configs? null?)
 
-(define (next-configs conf)
-  (let ((M   (conf-machine conf))
-        (r   (conf-state conf))
+(define (next-configs M conf)
+  (let ((r   (conf-state conf))
         (str (conf-string conf)))
     (append
       (map (lambda (state)
-             (make-configration M state str))
+             (make-configration state str))
            (transit M r))
       (map (lambda (state)
-             (make-configration M state (cdr str)))
+             (make-configration state (cdr str)))
            (transit M r (car str))))))
 
-(define (conf-accepts? conf)
+(define (conf-accepts? M conf)
   (if (empty-string-conf? conf)
-    (acceptable-conf? conf)
+    (acceptable-conf? M conf)
     (letrec ((acc? (lambda (configs)
                      (cond
                        ((empty-configs? configs) #f)
-                       ((conf-accepts? (car-configs configs)) #t)
+                       ((conf-accepts? M (car-configs configs)) #t)
                        (else (acc? (cdr-configs configs)))))))
-      (acc? (next-configs conf)))))
+      (acc? (next-configs M conf)))))
 
 (define (accepts? M str)
   (let ((lst (if (string? str)
                (string->list str)
                str)))
-    (conf-accepts? (make-initial-configration M lst))))
+    (conf-accepts? M (make-initial-configration M lst))))
 
 (define (new-state state)
   (letrec ((A (lambda (n)
-                (if (member n state)
+                (if (state n)
                   (A (+ 1 n))
                   n))))
     (A 0)))
@@ -89,14 +92,28 @@
                                       (cons (start M) (transit q))
                                       (transit q (car a))))
                (else (if (null? a) (transit q) (transit q (car a))))))))
-    (make-nfa (cons q0 (state M)) delta q0 (cons q0 (accept M)))))
+    (make-nfa (cons-membership q0 (state M))
+              delta
+              q0
+              (cons-membership q0 (accept M)))))
 
 (define l '(((0 #\0) (1))
             ((1 #\0) (2))
             ((2 #\1) (3))
             ))
-(define M (make-nfa '(0 1 2 3)
-                    (make-e-fun l '())
+
+(define (ll state . char)
+  (cond
+    ((null? char) '())
+    ((not (number? (car char))) '())
+    ((and (even? (car char)) (equal? 0 state)) '(1))
+    ((and (odd?  (car char)) (equal? 1 state)) '(2))
+    (else '())))
+
+(define M (make-nfa (make-membership '(0 1 2))
+                    ll
                     0
-                    '(3)))
+                    (make-membership '(2))))
 (define N (star M))
+
+(define (n . str) (accepts? N str))
