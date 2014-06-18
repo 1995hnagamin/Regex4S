@@ -1,3 +1,5 @@
+(use util.queue)
+
 (define (rel-apply a rel)
   (cond
     ((null? rel) '())
@@ -68,11 +70,27 @@
                        (else (acc? (cdr-configs configs)))))))
       (acc? (next-configs M conf)))))
 
+(define (qconf-accepts? M qconf)
+  (print (queue->list qconf))
+  (cond
+    ((queue-empty? qconf) #f)
+    ((and (empty-string-conf? (queue-front qconf))
+          (acceptable-conf? M (queue-front qconf))) #t)
+    (else
+      (let ((next (next-configs M (queue-pop! qconf))))
+        (if (null? next)
+          (qconf-accepts? M qconf)
+          (qconf-accepts? M (apply queue-push! (cons qconf next))))))))
+
 (define (accepts? M str)
   (let ((lst (if (string? str)
                (string->list str)
                str)))
     (conf-accepts? M (make-initial-configration M lst))))
+
+(define (qaccepts? M lst)
+  (qconf-accepts? M (queue-push! (make-queue)
+                                 (make-initial-configration M lst))))
 
 (define (new-state state)
   (letrec ((A (lambda (n)
